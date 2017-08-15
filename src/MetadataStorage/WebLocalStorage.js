@@ -1,6 +1,6 @@
 const MetadataStorage = require('./');
 
-class LocalStorage extends MetadataStorage {
+class WebLocalStorage extends MetadataStorage {
   constructor({
     keyName = '__migrace_metadata__'
   } = {}) {
@@ -36,4 +36,4 @@ class LocalStorage extends MetadataStorage {
   }
 }
 
-module.exports = LocalStorage;
+module.exports = WebLocalStorage;
