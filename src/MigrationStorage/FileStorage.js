@@ -2,17 +2,21 @@ const { resolve } = require('path');
 const { readFile, writeFile, remove } = require('fs-extra');
 
 const MigrationStorage = require('./');
-const { getTargetMagicNumber, TARGETS } = require('../utils');
+const { getTargetMagicNumber, getObjectAsyncMethodStart, TARGETS } = require('../utils');
 
 class FileStorage extends MigrationStorage {
   constructor({
     path = resolve('./migrations.js'),
+    quotes = 'double',
     target = 'es5'
   } = {}) {
     super();
 
     this._path = path;
     this._target = getTargetMagicNumber(target);
+    this._quote = quotes === 'single'
+      ? '\''
+      : '"';
     this._constKind = this._target >= TARGETS.ES6
       ? 'const'
       : 'var';
@@ -28,7 +32,7 @@ module.exports = migrations;`;
     return `
 
 migrations.push({
-  id: "${ name }",
+  id: ${ this._quote + name + this._quote },
   actions: {
     ${ this._getObjectAsyncMethodStart('up') }
 
@@ -41,15 +45,7 @@ migrations.push({
   }
 
   _getObjectAsyncMethodStart(name) {
-    if (this._target >= TARGETS.ES8) {
-      return `async ${ name }() {`;
-    }
-
-    if (this._target >= TARGETS.ES6) {
-      return `${ name }() {`;
-    }
-
-    return `${ name }: function () {`;
+    return getObjectAsyncMethodStart(this._target, name);
   }
 
   ensure() {

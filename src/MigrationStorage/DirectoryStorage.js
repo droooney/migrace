@@ -2,7 +2,7 @@ const { resolve, basename } = require('path');
 const { readdir, writeFile, mkdirs, remove } = require('fs-extra');
 
 const MigrationStorage = require('./');
-const { getTargetMagicNumber, TARGETS } = require('../utils');
+const { getTargetMagicNumber, getObjectAsyncMethodStart } = require('../utils');
 
 class DirectoryStorage extends MigrationStorage {
   constructor({
@@ -27,15 +27,7 @@ class DirectoryStorage extends MigrationStorage {
   }
 
   _getObjectAsyncMethodStart(name) {
-    if (this._target >= TARGETS.ES8) {
-      return `async ${ name }() {`;
-    }
-
-    if (this._target >= TARGETS.ES6) {
-      return `${ name }() {`;
-    }
-
-    return `${ name }: function () {`;
+    return getObjectAsyncMethodStart(this._target, name);
   }
 
   ensure() {

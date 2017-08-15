@@ -28,4 +28,16 @@ exports.getTargetMagicNumber = (target) => {
   return TARGETS.ES5;
 };
 
+exports.getObjectAsyncMethodStart = (target, name) => {
+  if (target >= TARGETS.ES8) {
+    return `async ${ name }() {`;
+  }
+
+  if (target >= TARGETS.ES6) {
+    return `${ name }() {`;
+  }
+
+  return `${ name }: function () {`;
+};
+
 exports.TARGETS = TARGETS;
