@@ -3,7 +3,7 @@ const { ensureFile, readFile, writeFile, remove } = require('fs-extra');
 
 const MetadataStorage = require('./');
 
-class FileStorage extends MetadataStorage {
+class FileMetadataStorage extends MetadataStorage {
   constructor({
     path = resolve('./migrace-metadata.json')
   } = {}) {
@@ -29,4 +29,4 @@ class FileStorage extends MetadataStorage {
   }
 }
 
-module.exports = FileStorage;
+module.exports = FileMetadataStorage;

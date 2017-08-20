@@ -1,6 +1,6 @@
 const MetadataStorage = require('./');
 
-class WebSQLStorage extends MetadataStorage {
+class WebSQLMetadataStorage extends MetadataStorage {
   constructor({
     db,
     tableName = '__migrace_metadata__'
@@ -68,4 +68,4 @@ class WebSQLStorage extends MetadataStorage {
   }
 }
 
-module.exports = WebSQLStorage;
+module.exports = WebSQLMetadataStorage;

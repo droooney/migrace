@@ -1,6 +1,6 @@
 const MigrationStorage = require('./');
 
-class MemoryStorage extends MigrationStorage {
+class MemoryMigrationStorage extends MigrationStorage {
   constructor({
     migrations = []
   } = {}) {
@@ -9,16 +9,14 @@ class MemoryStorage extends MigrationStorage {
     this._migrations = migrations;
   }
 
-  ensure() {
-    return Promise.resolve();
-  }
+  ensure() {}
 
   destroy() {
-    return Promise.resolve();
+    this._migrations = [];
   }
 
   getAllMigrations() {
-    return Promise.resolve(this._migrations);
+    return this._migrations;
   }
 
   addMigration(name) {
@@ -29,9 +27,7 @@ class MemoryStorage extends MigrationStorage {
         down: () => Promise.resolve()
       }
     });
-
-    return Promise.resolve();
   }
 }
 
-module.exports = MemoryStorage;
+module.exports = MemoryMigrationStorage;

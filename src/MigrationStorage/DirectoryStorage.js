@@ -1,48 +1,74 @@
 const { resolve, basename } = require('path');
-const { readdir, writeFile, mkdirs, remove } = require('fs-extra');
+const { readdir, writeFile, ensureDir, ensureFile, remove } = require('fs-extra');
 
 const MigrationStorage = require('./');
-const { getTargetMagicNumber, getObjectAsyncMethodStart } = require('../utils');
 
-class DirectoryStorage extends MigrationStorage {
-  constructor({
-    path = resolve('./migrations'),
-    target = 'es5'
-  } = {}) {
-    super();
-
-    this._path = path;
-    this._target = getTargetMagicNumber(target);
-  }
-
-  _getMigrationTemplate() {
+class DirectoryMigrationStorage extends MigrationStorage {
+  static migrationTemplate() {
     return `module.exports = {
-  ${ this._getObjectAsyncMethodStart('up') }
+  up: function () {
 
   },
-  ${ this._getObjectAsyncMethodStart('down') }
+  down: function () {
 
   }
 }`;
   }
 
-  _getObjectAsyncMethodStart(name) {
-    return getObjectAsyncMethodStart(this._target, name);
+  static bundleEntryTemplate(paths) {
+    const migrations = paths.map((path) => (`{
+  id: ${ JSON.stringify(basename(path, '.js')) },
+  actions: require(${ JSON.stringify(path) })
+}`));
+
+    return `module.exports = [${ migrations.join(',') }];`;
+  }
+
+  constructor({
+    path = resolve('./migrations'),
+    migrationTemplate = DirectoryMigrationStorage.migrationTemplate,
+    generateBundleEntry = false,
+    bundleEntryPath = resolve(path, 'index.js'),
+    bundleEntryTemplate = DirectoryMigrationStorage.bundleEntryTemplate,
+    filter = (file) => (
+      generateBundleEntry
+        ? resolve(path, file) !== bundleEntryPath
+        : true
+    )
+  } = {}) {
+    super();
+
+    this._path = path;
+    this._migrationTemplate = migrationTemplate;
+    this._generateBundleEntry = generateBundleEntry;
+    this._bundleEntryPath = bundleEntryPath;
+    this._bundleEntryTemplate = bundleEntryTemplate;
+    this._filter = filter;
   }
 
   ensure() {
-    return readdir(this._path).catch(() => (
-      mkdirs(this._path)
-    ));
+    return ensureDir(this._path).then(() => {
+      if (!this._generateBundleEntry) {
+        return;
+      }
+
+      return ensureFile(this._bundleEntryPath);
+    });
   }
 
   destroy() {
-    return remove(this._path);
+    return remove(this._path).then(() => {
+      if (!this._generateBundleEntry) {
+        return;
+      }
+
+      return remove(this._bundleEntryPath);
+    });
   }
 
   getAllMigrations() {
     return readdir(this._path).then((files) => (
-      files.map((file) => ({
+      files.filter(this._filter).map((file) => ({
         id: basename(file, '.js'),
         actions: require(`${ this._path }/${ file }`)
       }))
@@ -50,8 +76,20 @@ class DirectoryStorage extends MigrationStorage {
   }
 
   addMigration(name) {
-    return writeFile(`${ this._path }/${ name }.js`, this._getMigrationTemplate());
+    return writeFile(`${ this._path }/${ name }.js`, this._migrationTemplate()).then(() => {
+      if (!this._generateBundleEntry) {
+        return;
+      }
+
+      return readdir(this._path).then((files) => {
+        files = files.filter(this._filter).map((file) => (
+          resolve(this._path, file)
+        ));
+
+        writeFile(this._bundleEntryPath, this._bundleEntryTemplate(files));
+      });
+    });
   }
 }
 
-module.exports = DirectoryStorage;
+module.exports = DirectoryMigrationStorage;

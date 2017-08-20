@@ -2,55 +2,45 @@ const { resolve } = require('path');
 const { readFile, writeFile, remove } = require('fs-extra');
 
 const MigrationStorage = require('./');
-const { getTargetMagicNumber, getObjectAsyncMethodStart, TARGETS } = require('../utils');
 
-class FileStorage extends MigrationStorage {
-  constructor({
-    path = resolve('./migrations.js'),
-    quotes = 'double',
-    target = 'es5'
-  } = {}) {
-    super();
-
-    this._path = path;
-    this._target = getTargetMagicNumber(target);
-    this._quote = quotes === 'single'
-      ? '\''
-      : '"';
-    this._constKind = this._target >= TARGETS.ES6
-      ? 'const'
-      : 'var';
-  }
-
-  _getStorageTemplate() {
-    return `${ this._constKind } migrations = [];
+class FileMigrationStorage extends MigrationStorage {
+  static fileTemplate() {
+    return `var migrations = [];
 
 module.exports = migrations;`;
   }
 
-  _getMigrationTemplate(name) {
+  static migrationTemplate(name) {
     return `
 
 migrations.push({
-  id: ${ this._quote + name + this._quote },
+  id: ${ JSON.stringify(name) },
   actions: {
-    ${ this._getObjectAsyncMethodStart('up') }
+    up: function () {
 
     },
-    ${ this._getObjectAsyncMethodStart('down') }
+    down: function () {
 
     }
   }
 });`;
   }
 
-  _getObjectAsyncMethodStart(name) {
-    return getObjectAsyncMethodStart(this._target, name);
+  constructor({
+    path = resolve('./migrations.js'),
+    fileTemplate = FileMigrationStorage.fileTemplate,
+    migrationTemplate = FileMigrationStorage.migrationTemplate
+  } = {}) {
+    super();
+
+    this._path = path;
+    this._fileTemplate = fileTemplate;
+    this._migrationTemplate = migrationTemplate;
   }
 
   ensure() {
     return readFile(this._path).catch(() => (
-      writeFile(this._path, this._getStorageTemplate())
+      writeFile(this._path, this._fileTemplate())
     ));
   }
 
@@ -65,10 +55,10 @@ migrations.push({
   }
 
   addMigration(name) {
-    return writeFile(this._path, this._getMigrationTemplate(name), {
+    return writeFile(this._path, this._migrationTemplate(name), {
       flags: 'a'
     });
   }
 }
 
-module.exports = FileStorage;
+module.exports = FileMigrationStorage;
