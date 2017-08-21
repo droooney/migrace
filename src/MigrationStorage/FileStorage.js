@@ -26,12 +26,14 @@ migrations.push({
 });`;
   }
 
-  constructor({
-    path = resolve('./migrations.js'),
-    fileTemplate = FileMigrationStorage.fileTemplate,
-    migrationTemplate = FileMigrationStorage.migrationTemplate
-  } = {}) {
+  constructor(options = {}) {
     super();
+
+    const {
+      path = resolve('./migrations.js'),
+      fileTemplate = this.constructor.fileTemplate,
+      migrationTemplate = this.constructor.migrationTemplate
+    } = options;
 
     this._path = path;
     this._fileTemplate = fileTemplate;
@@ -59,6 +61,8 @@ migrations.push({
       flags: 'a'
     });
   }
+
+  generateBundleEntry() {}
 }
 
 module.exports = FileMigrationStorage;

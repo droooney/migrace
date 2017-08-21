@@ -26,6 +26,10 @@ class MigrationStorage {
   addMigration() {
     return Promise.reject(new Error('Abstract MigrationStorage#addMigration method called'));
   }
+
+  generateBundleEntry() {
+    return Promise.reject(new Error('Abstract MigrationStorage#generateBundleEntry method called'));
+  }
 }
 
 module.exports = MigrationStorage;

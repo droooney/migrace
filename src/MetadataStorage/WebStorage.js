@@ -1,10 +1,12 @@
 const MetadataStorage = require('./');
 
 class WebMetadataStorage extends MetadataStorage {
-  constructor({
-    keyName = '__migrace_metadata__'
-  } = {}) {
+  constructor(options = {}) {
     super();
+
+    const {
+      keyName = '__migrace_metadata__'
+    } = options;
 
     this._keyName = keyName;
   }

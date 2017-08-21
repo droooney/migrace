@@ -1,10 +1,12 @@
 const MigrationStorage = require('./');
 
 class MemoryMigrationStorage extends MigrationStorage {
-  constructor({
-    migrations = []
-  } = {}) {
+  constructor(options = {}) {
     super();
+
+    const {
+      migrations = []
+    } = options;
 
     this._migrations = migrations;
   }
@@ -23,11 +25,13 @@ class MemoryMigrationStorage extends MigrationStorage {
     this._migrations.push({
       id: name,
       actions: {
-        up: () => Promise.resolve(),
-        down: () => Promise.resolve()
+        up() {},
+        down() {}
       }
     });
   }
+
+  generateBundleEntry() {}
 }
 
 module.exports = MemoryMigrationStorage;

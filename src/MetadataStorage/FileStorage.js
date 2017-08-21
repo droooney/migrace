@@ -4,10 +4,12 @@ const { ensureFile, readFile, writeFile, remove } = require('fs-extra');
 const MetadataStorage = require('./');
 
 class FileMetadataStorage extends MetadataStorage {
-  constructor({
-    path = resolve('./migrace-metadata.json')
-  } = {}) {
+  constructor(options = {}) {
     super();
+
+    const {
+      path = resolve('./migrace-metadata.json')
+    } = options;
 
     this._path = path;
   }

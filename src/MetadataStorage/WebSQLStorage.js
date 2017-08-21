@@ -1,11 +1,13 @@
 const MetadataStorage = require('./');
 
 class WebSQLMetadataStorage extends MetadataStorage {
-  constructor({
-    db,
-    tableName = '__migrace_metadata__'
-  } = {}) {
+  constructor(options = {}) {
     super();
+
+    const {
+      db,
+      tableName = '__migrace_metadata__'
+    } = options;
 
     if (!db) {
       throw new Error('options.db is not specified');

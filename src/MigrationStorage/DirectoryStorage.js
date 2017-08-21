@@ -1,5 +1,5 @@
-const { resolve, basename } = require('path');
-const { readdir, writeFile, ensureDir, ensureFile, remove } = require('fs-extra');
+const { resolve, basename, dirname, relative } = require('path');
+const { readdir, writeFile, ensureDir, remove } = require('fs-extra');
 
 const MigrationStorage = require('./');
 
@@ -24,19 +24,31 @@ class DirectoryMigrationStorage extends MigrationStorage {
     return `module.exports = [${ migrations.join(',') }];`;
   }
 
-  constructor({
-    path = resolve('./migrations'),
-    migrationTemplate = DirectoryMigrationStorage.migrationTemplate,
-    generateBundleEntry = false,
-    bundleEntryPath = resolve(path, 'index.js'),
-    bundleEntryTemplate = DirectoryMigrationStorage.bundleEntryTemplate,
-    filter = (file) => (
-      generateBundleEntry
-        ? resolve(path, file) !== bundleEntryPath
-        : true
-    )
-  } = {}) {
+  static _relativeFilename(path1, path2) {
+    let path = relative(dirname(path1), path2);
+
+    if (path[0] !== '.' && path[0] !== '/') {
+      path = `./${ path }`;
+    }
+
+    return path;
+  }
+
+  constructor(options = {}) {
     super();
+
+    const {
+      path = resolve('./migrations'),
+      migrationTemplate = this.constructor.migrationTemplate,
+      generateBundleEntry = false,
+      bundleEntryPath = resolve(path, 'index.js'),
+      bundleEntryTemplate = this.constructor.bundleEntryTemplate,
+      filter = (file) => (
+        generateBundleEntry
+          ? resolve(path, file) !== bundleEntryPath
+          : true
+      )
+    } = options;
 
     this._path = path;
     this._migrationTemplate = migrationTemplate;
@@ -47,13 +59,9 @@ class DirectoryMigrationStorage extends MigrationStorage {
   }
 
   ensure() {
-    return ensureDir(this._path).then(() => {
-      if (!this._generateBundleEntry) {
-        return;
-      }
-
-      return ensureFile(this._bundleEntryPath);
-    });
+    return ensureDir(this._path).then(() => (
+      this.generateBundleEntry()
+    ));
   }
 
   destroy() {
@@ -76,18 +84,25 @@ class DirectoryMigrationStorage extends MigrationStorage {
   }
 
   addMigration(name) {
-    return writeFile(`${ this._path }/${ name }.js`, this._migrationTemplate()).then(() => {
-      if (!this._generateBundleEntry) {
-        return;
-      }
+    return writeFile(`${ this._path }/${ name }.js`, this._migrationTemplate()).then(() => (
+      this.generateBundleEntry()
+    ));
+  }
 
-      return readdir(this._path).then((files) => {
-        files = files.filter(this._filter).map((file) => (
+  generateBundleEntry() {
+    if (!this._generateBundleEntry) {
+      return;
+    }
+
+    return readdir(this._path).then((files) => {
+      files = files.filter(this._filter).map((file) => (
+        DirectoryMigrationStorage._relativeFilename(
+          this._bundleEntryPath,
           resolve(this._path, file)
-        ));
+        )
+      ));
 
-        writeFile(this._bundleEntryPath, this._bundleEntryTemplate(files));
-      });
+      return writeFile(this._bundleEntryPath, this._bundleEntryTemplate(files));
     });
   }
 }

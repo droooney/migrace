@@ -1,10 +1,12 @@
 const MetadataStorage = require('./');
 
 class IndexedDBMetadataStorage extends MetadataStorage {
-  constructor({
-    storageName = '__migrace_metadata__'
-  } = {}) {
+  constructor(options = {}) {
     super();
+
+    const {
+      storageName = '__migrace_metadata__'
+    } = options;
   }
 
   _transaction() {
