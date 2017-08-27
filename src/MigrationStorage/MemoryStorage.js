@@ -21,17 +21,13 @@ class MemoryMigrationStorage extends MigrationStorage {
     return this._migrations;
   }
 
-  addMigration(name) {
-    this._migrations.push({
-      id: name,
-      actions: {
-        up() {},
-        down() {}
-      }
-    });
+  addMigration() {
+    throw new Error('MemoryMigrationStorage doesn\'t generate new migrations');
   }
 
-  generateBundleEntry() {}
+  generateBundleEntry() {
+    throw new Error('MemoryMigrationStorage doesn\'t generate bundle entry files');
+  }
 }
 
 module.exports = MemoryMigrationStorage;

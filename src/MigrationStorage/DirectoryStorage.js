@@ -4,26 +4,6 @@ const { readdir, writeFile, ensureDir, remove } = require('fs-extra');
 const MigrationStorage = require('./');
 
 class DirectoryMigrationStorage extends MigrationStorage {
-  static migrationTemplate() {
-    return `module.exports = {
-  up: function () {
-
-  },
-  down: function () {
-
-  }
-}`;
-  }
-
-  static bundleEntryTemplate(paths) {
-    const migrations = paths.map((path) => (`{
-  id: ${ JSON.stringify(basename(path, '.js')) },
-  actions: require(${ JSON.stringify(path) })
-}`));
-
-    return `module.exports = [${ migrations.join(',') }];`;
-  }
-
   static _relativeFilename(path1, path2) {
     let path = relative(dirname(path1), path2);
 
@@ -38,35 +18,64 @@ class DirectoryMigrationStorage extends MigrationStorage {
     super();
 
     const {
-      path = resolve('./migrations'),
-      migrationTemplate = this.constructor.migrationTemplate,
-      generateBundleEntry = false,
-      bundleEntryPath = resolve(path, 'index.js'),
-      bundleEntryTemplate = this.constructor.bundleEntryTemplate,
-      filter = (file) => (
-        generateBundleEntry
-          ? resolve(path, file) !== bundleEntryPath
-          : true
-      )
+      path = resolve('./migrace/migrations'),
+      extension = 'js',
+      bundleEntryPath = resolve(path, `index.${ extension }`)
     } = options;
 
     this._path = path;
-    this._migrationTemplate = migrationTemplate;
-    this._generateBundleEntry = generateBundleEntry;
+    this._extension = extension;
     this._bundleEntryPath = bundleEntryPath;
-    this._bundleEntryTemplate = bundleEntryTemplate;
-    this._filter = filter;
   }
 
-  ensure() {
-    return ensureDir(this._path).then(() => (
-      this.generateBundleEntry()
-    ));
+  filter(file, options) {
+    return options.downgradeSupport
+      ? resolve(this._path, file) !== bundleEntryPath
+      : true;
   }
 
-  destroy() {
+  getMigrationTemplate(options) {
+    const actions = ['up', 'down'];
+
+    if (options.force) {
+      actions.push('wasExecuted');
+    }
+
+    const actionsString = actions.map((action) => (
+      `  ${ action }: function () {
+
+  }`
+    )).join(',\n');
+
+    return `module.exports = {
+${ actionsString }
+}`;
+  }
+
+  getBundleEntryTemplate() {
+    const migrations = paths.map((path) => (`{
+  id: ${ JSON.stringify(basename(path, `.${ this._extension }`)) },
+  actions: require(${ JSON.stringify(path) })
+}`));
+
+    return `module.exports = [${ migrations.join(',') }];`;
+  }
+
+  ensure(options) {
+    return ensureDir(this._path).then(() => {
+      if (!options.downgradeSupport) {
+        return;
+      }
+
+      return writeFile(this._bundleEntryPath, this.getBundleEntryTemplate([], options), {
+        flags: 'wx'
+      });
+    });
+  }
+
+  destroy(options) {
     return remove(this._path).then(() => {
-      if (!this._generateBundleEntry) {
+      if (!options.downgradeSupport) {
         return;
       }
 
@@ -74,36 +83,38 @@ class DirectoryMigrationStorage extends MigrationStorage {
     });
   }
 
-  getAllMigrations() {
+  getAllMigrations(options) {
     return readdir(this._path).then((files) => (
-      files.filter(this._filter).map((file) => ({
-        id: basename(file, '.js'),
+      files.filter((file) => this.filter(file, options)).map((file) => ({
+        id: basename(file, `.${ this._extension }`),
         actions: require(`${ this._path }/${ file }`)
       }))
     ));
   }
 
-  addMigration(name) {
-    return writeFile(`${ this._path }/${ name }.js`, this._migrationTemplate()).then(() => (
-      this.generateBundleEntry()
+  addMigration(name, options) {
+    return writeFile(`${ this._path }/${ name }.${ this._extension }`, this.getMigrationTemplate(options)).then(() => (
+      this.generateBundleEntry(options)
     ));
   }
 
-  generateBundleEntry() {
-    if (!this._generateBundleEntry) {
+  generateBundleEntry(options) {
+    if (!options.downgradeSupport) {
       return;
     }
 
-    return readdir(this._path).then((files) => {
-      files = files.filter(this._filter).map((file) => (
-        DirectoryMigrationStorage._relativeFilename(
-          this._bundleEntryPath,
-          resolve(this._path, file)
-        )
-      ));
+    return readdir(this._path)
+      .then((files) => {
+        files = files.filter((file) => this.filter(file, options)).map((file) => (
+          DirectoryMigrationStorage._relativeFilename(
+            this._bundleEntryPath,
+            resolve(this._path, file)
+          )
+        ));
 
-      return writeFile(this._bundleEntryPath, this._bundleEntryTemplate(files));
-    });
+        return writeFile(this._bundleEntryPath, this.getBundleEntryTemplate(files, options));
+      })
+      .then(() => this._bundleEntryPath);
   }
 }
 

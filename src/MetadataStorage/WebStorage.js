@@ -23,8 +23,8 @@ class WebMetadataStorage extends MetadataStorage {
     return localStorage.getItem(this._keyName);
   }
 
-  write(json) {
-    localStorage.setItem(this._keyName, json);
+  write(data) {
+    localStorage.setItem(this._keyName, data);
   }
 }
 

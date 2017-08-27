@@ -63,9 +63,9 @@ class WebSQLMetadataStorage extends MetadataStorage {
     ));
   }
 
-  write(json) {
+  write(data) {
     return this._transaction((execute) => (
-      execute('UPDATE ? SET data = ?', [this._tableName, json])
+      execute('UPDATE ? SET data = ?', [this._tableName, data])
     ));
   }
 }

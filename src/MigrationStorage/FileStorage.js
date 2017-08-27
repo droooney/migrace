@@ -4,45 +4,48 @@ const { readFile, writeFile, remove } = require('fs-extra');
 const MigrationStorage = require('./');
 
 class FileMigrationStorage extends MigrationStorage {
-  static fileTemplate() {
+  constructor(options = {}) {
+    super();
+
+    const {
+      path = resolve('./migrace/migrations.js')
+    } = options;
+
+    this._path = path;
+  }
+
+  getFileTemplate() {
     return `var migrations = [];
 
 module.exports = migrations;`;
   }
 
-  static migrationTemplate(name) {
+  getMigrationTemplate(name, options) {
+    const actions = ['up', 'down'];
+
+    if (options.force) {
+      actions.push('wasExecuted');
+    }
+
+    const actionsString = actions.map((action) => (
+      `    ${ action }: function () {
+
+    }`
+    )).join(',\n');
+
     return `
 
 migrations.push({
   id: ${ JSON.stringify(name) },
   actions: {
-    up: function () {
-
-    },
-    down: function () {
-
-    }
+${ actionsString }
   }
 });`;
   }
 
-  constructor(options = {}) {
-    super();
-
-    const {
-      path = resolve('./migrations.js'),
-      fileTemplate = this.constructor.fileTemplate,
-      migrationTemplate = this.constructor.migrationTemplate
-    } = options;
-
-    this._path = path;
-    this._fileTemplate = fileTemplate;
-    this._migrationTemplate = migrationTemplate;
-  }
-
   ensure() {
     return readFile(this._path).catch(() => (
-      writeFile(this._path, this._fileTemplate())
+      writeFile(this._path, this.getFileTemplate())
     ));
   }
 
@@ -51,18 +54,18 @@ migrations.push({
   }
 
   getAllMigrations() {
-    return new Promise((resolve) => {
-      resolve(require(this._path));
-    });
+    return require(this._path);
   }
 
-  addMigration(name) {
-    return writeFile(this._path, this._migrationTemplate(name), {
+  addMigration(name, options) {
+    return writeFile(this._path, this.getMigrationTemplate(name, options), {
       flags: 'a'
     });
   }
 
-  generateBundleEntry() {}
+  generateBundleEntry() {
+    return this._path;
+  }
 }
 
 module.exports = FileMigrationStorage;

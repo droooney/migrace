@@ -1,30 +1,36 @@
 class MetadataStorage {
-  __destroy__() {
-    return this.ensure().then(() => this.destroy());
+  __ensure__(options) {
+    return new Promise((resolve) => {
+      resolve(this.ensure(options));
+    });
   }
 
-  __read__() {
-    return this.ensure().then(() => this.read());
+  __destroy__(options) {
+    return this.__ensure__(options).then(() => this.destroy(options));
   }
 
-  __write__(json) {
-    return this.ensure().then(() => this.write(json));
+  __read__(options) {
+    return this.__ensure__(options).then(() => this.read(options));
+  }
+
+  __write__(data, options) {
+    return this.__ensure__(options).then(() => this.write(data, options));
   }
 
   ensure() {
-    return Promise.reject(new Error('Abstract MetadataStorage#ensure method called'));
+    throw new Error('Abstract MetadataStorage#ensure method called');
   }
 
   destroy() {
-    return Promise.reject(new Error('Abstract MetadataStorage#destroy method called'));
+    throw new Error('Abstract MetadataStorage#destroy method called');
   }
 
   read() {
-    return Promise.reject(new Error('Abstract MetadataStorage#read method called'));
+    throw new Error('Abstract MetadataStorage#read method called');
   }
 
   write() {
-    return Promise.reject(new Error('Abstract MetadataStorage#write method called'));
+    throw new Error('Abstract MetadataStorage#write method called');
   }
 }
 

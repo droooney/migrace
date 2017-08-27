@@ -25,7 +25,7 @@ class IndexedDBMetadataStorage extends MetadataStorage {
 
   }
 
-  write(json) {
+  write(data) {
 
   }
 }

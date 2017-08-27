@@ -26,8 +26,8 @@ class FileMetadataStorage extends MetadataStorage {
     return readFile(this._path, 'utf8');
   }
 
-  write(json) {
-    return writeFile(this._path, json);
+  write(data) {
+    return writeFile(this._path, data);
   }
 }
 

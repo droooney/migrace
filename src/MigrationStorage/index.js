@@ -1,34 +1,44 @@
 class MigrationStorage {
-  __destroy__() {
-    return this.ensure().then(() => this.destroy());
+  __ensure__(options) {
+    return new Promise((resolve) => {
+      resolve(this.ensure(options));
+    });
   }
 
-  __getAllMigrations__() {
-    return this.ensure().then(() => this.getAllMigrations());
+  __destroy__(options) {
+    return this.__ensure__(options).then(() => this.destroy(options));
   }
 
-  __addMigration__(name) {
-    return this.ensure().then(() => this.addMigration(name));
+  __getAllMigrations__(options) {
+    return this.__ensure__(options).then(() => this.getAllMigrations(options));
+  }
+
+  __addMigration__(name, options) {
+    return this.__ensure__(options).then(() => this.addMigration(name, options));
+  }
+
+  __generateBundleEntry__(options) {
+    return this.__ensure__(options).then(() => this.generateBundleEntry(options));
   }
 
   ensure() {
-    return Promise.reject(new Error('Abstract MigrationStorage#ensure method called'));
+    throw new Error('Abstract MigrationStorage#ensure method called');
   }
 
   destroy() {
-    return Promise.reject(new Error('Abstract MigrationStorage#destroy method called'));
+    throw new Error('Abstract MigrationStorage#destroy method called');
   }
 
   getAllMigrations() {
-    return Promise.reject(new Error('Abstract MigrationStorage#getAllMigrations method called'));
+    throw new Error('Abstract MigrationStorage#getAllMigrations method called');
   }
 
   addMigration() {
-    return Promise.reject(new Error('Abstract MigrationStorage#addMigration method called'));
+    throw new Error('Abstract MigrationStorage#addMigration method called');
   }
 
   generateBundleEntry() {
-    return Promise.reject(new Error('Abstract MigrationStorage#generateBundleEntry method called'));
+    throw new Error('Abstract MigrationStorage#generateBundleEntry method called');
   }
 }
 
